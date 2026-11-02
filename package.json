@@ -1,0 +1,8 @@
+{
+  "name": "chatcanvas",
+  "version": "1.0.0",
+  "description": "A Twitch chat collaborative pixel canvas for stream overlays",
+  "main": "index.js",
+  "scripts": { "start": "node index.js", "test": "node test.js" },
+  "dependencies": { "tmi.js": "^1.8.5", "ws": "^8.18.0" }
+}
