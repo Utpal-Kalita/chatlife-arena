@@ -8,6 +8,7 @@ class Canvas {
     this.generation = 0;
     this.placements = 0;
     this.lastPainters = [];
+    this.activeTeams = new Set();
   }
 
   join(user, team) {
@@ -27,6 +28,7 @@ class Canvas {
     const key = name.toLowerCase();
     if (now - (this.cooldowns.get(key) ?? -Infinity) < 3000) return { ok: false, error: 'Give your pixels 3 seconds to breathe.' };
     this.cooldowns.set(key, now);
+    this.activeTeams.add(team);
     const pixels = [];
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
       const px = x + dx, py = y + dy;
@@ -46,7 +48,14 @@ class Canvas {
     this.generation++;
     result.generation = this.generation;
     result.latest = [...this.lastPainters];
-    result.winner ||= this.generation >= 100 ? (result.territory.fire === result.territory.ice ? 'DRAW' : result.territory.fire > result.territory.ice ? 'FIRE WINS' : 'ICE WINS') : null;
+    result.winner = null;
+    if (this.generation >= 100 && this.activeTeams.size > 0) {
+      result.winner = result.territory.fire === result.territory.ice ? 'DRAW' : result.territory.fire > result.territory.ice ? 'FIRE WINS' : 'ICE WINS';
+    } else if (this.activeTeams.has('fire') && this.activeTeams.has('ice')) {
+      if (result.territory.fire === 0 && result.territory.ice === 0) result.winner = 'DRAW';
+      else if (result.territory.fire === 0) result.winner = 'ICE WINS';
+      else if (result.territory.ice === 0) result.winner = 'FIRE WINS';
+    }
     result.type = 'generation';
     return result;
   }
