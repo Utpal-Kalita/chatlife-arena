@@ -26,8 +26,51 @@ assert.equal(c.stats().territory.total, 8);
 assert.equal(c.place('Nobody', 1, 1, 10000).ok, false);
 assert.equal(c.place('Ada', 49, 1, 14000).ok, false);
 
+function activate(canvas, user, team, now) {
+  canvas.join(user, team);
+  canvas.place(user, team === 'fire' ? 2 : 46, team === 'fire' ? 2 : 26, now);
+}
+function putBlock(canvas, team, x, y) {
+  for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1]]) canvas.grid[y + dy][x + dx] = team;
+}
+
+// One active team cannot claim an extinction win, even across many generations.
+const solo = new Canvas();
+activate(solo, 'solo', 'fire', 10000);
+solo.grid = grid(); putBlock(solo, 'fire', 10, 10);
+for (let i = 0; i < 20; i++) assert.equal(solo.advance(() => 0).winner, null);
+
+// When both teams have entered, extinction of FIRE awards ICE the round.
+const extinction = new Canvas();
+activate(extinction, 'f', 'fire', 10000); activate(extinction, 'i', 'ice', 10000);
+extinction.grid = grid(); putBlock(extinction, 'ice', 4, 4); extinction.grid[20][20] = 'fire';
+assert.equal(extinction.advance(() => 0).winner, 'ICE WINS');
+
+// Empty rounds never end, including beyond the nominal generation cap.
+const empty = new Canvas();
+for (let i = 0; i < 105; i++) assert.equal(empty.advance(() => 0).winner, null);
+
+// A late second team counts once it paints; FIRE's later extinction awards ICE.
+const delayed = new Canvas();
+activate(delayed, 'fireuser', 'fire', 10000);
+delayed.grid = grid(); putBlock(delayed, 'fire', 10, 10);
+assert.equal(delayed.advance(() => 0).winner, null);
+activate(delayed, 'iceuser', 'ice', 14000);
+delayed.grid = grid(); putBlock(delayed, 'ice', 4, 4); delayed.grid[20][20] = 'fire';
+assert.equal(delayed.advance(() => 0).winner, 'ICE WINS');
+
+// At the cap, territory wins; equal territory is a draw.
+const cappedLead = new Canvas();
+activate(cappedLead, 'f', 'fire', 10000); activate(cappedLead, 'i', 'ice', 10000);
+cappedLead.grid = grid(); putBlock(cappedLead, 'fire', 5, 5);
+cappedLead.generation = 99;
+assert.equal(cappedLead.advance(() => 0).winner, 'FIRE WINS');
+
 const capped = new Canvas();
-for (const [x, y] of [[4, 4], [5, 4], [4, 5], [5, 5]]) capped.grid[y][x] = 'ice';
+activate(capped, 'f', 'fire', 10000); activate(capped, 'i', 'ice', 10000);
+capped.grid = grid(); putBlock(capped, 'fire', 5, 5); putBlock(capped, 'ice', 35, 18);
 capped.generation = 99;
-assert.equal(capped.advance().winner, 'ICE WINS');
+assert.equal(capped.advance(() => 0).winner, 'DRAW');
+capped.reset();
+assert.equal(capped.activeTeams.size, 0);
 console.log('Canvas and Life tests passed.');
