@@ -21,7 +21,7 @@ function step(grid, random = Math.random) {
       next[y][x] = fire === ice ? (random() < 0.5 ? 'fire' : 'ice') : fire > ice ? 'fire' : 'ice';
   }
   const stats = territory(next);
-  const winner = stats.fire === 0 && stats.ice === 0 ? 'DRAW' : stats.fire === 0 ? 'ICE WINS' : stats.ice === 0 ? 'FIRE WINS' : null;
+  const winner = stats.total === 0 ? null : stats.fire === 0 ? 'ICE WINS' : stats.ice === 0 ? 'FIRE WINS' : null;
   return { grid: next, territory: stats, winner };
 }
 
